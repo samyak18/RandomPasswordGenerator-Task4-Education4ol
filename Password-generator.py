@@ -3,10 +3,7 @@ import string
 import mysql.connector
 import tkinter as tk
 from tkinter import messagebox, simpledialog
-from openpyxl import Workbook
-from openpyxl.utils import get_column_letter
 from datetime import datetime, timedelta
-import os
 import openpyxl
 
 # Initialize password history
@@ -74,33 +71,17 @@ def save_to_database(words, password, strength, expiry_date):
             cursor.close()
             conn.close()
 
-def save_to_excel_file(words, password, strength, expiry_date):
-    file_name = "generated_passwords.xlsx"
-    
+def save_to_excel(words, password, strength, expiry_date):
     try:
-        if os.path.exists(file_name):
-            wb = openpyxl.load_workbook(file_name)
-            ws = wb.active
-        else:
-            wb = Workbook()
-            ws = wb.active
-            ws.title = "Passwords"
-            
-            headers = ["Words", "Generated Password", "Strength", "Expiry Date"]
-            ws.append(headers)
-            
-            for col_num, col in enumerate(headers, 1):
-                column_letter = get_column_letter(col_num)
-                ws[column_letter + '1'].font = ws[column_letter + '1'].font.copy(bold=True)
-        
-        # Append the new data
-        data = [', '.join(words), password, strength, expiry_date]
-        ws.append(data)
-        
-        wb.save(file_name)
-    except Exception as e:
-        print(f"Error: {e}")
-        messagebox.showerror("Excel Error", f"An error occurred while saving to Excel file:\n{e}")
+        workbook = openpyxl.load_workbook('passwords.xlsx')
+        sheet = workbook.active
+    except FileNotFoundError:
+        workbook = openpyxl.Workbook()
+        sheet = workbook.active
+        sheet.append(["Words", "Generated Password", "Strength", "Expiry Date"])
+
+    sheet.append([', '.join(words), password, strength, expiry_date.strftime('%Y-%m-%d')])
+    workbook.save('passwords.xlsx')
 
 def add_to_password_history(password, expiry_date):
     password_history.append((password, expiry_date))
@@ -131,7 +112,7 @@ def generate_password_and_show():
     expiry_date = (datetime.now() + timedelta(days=expiry_days)).date()
 
     save_to_database(words, password, strength, expiry_date)
-    save_to_excel_file(words, password, strength, expiry_date)
+    save_to_excel(words, password, strength, expiry_date)
     add_to_password_history(password, expiry_date)
     
     display_window = tk.Toplevel(root)
